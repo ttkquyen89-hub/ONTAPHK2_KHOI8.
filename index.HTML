@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phiếu Học Tập Tương Tác</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #ffffff;
+        }
+        .correct { color: #16a34a; font-weight: bold; }
+        .incorrect { color: #dc2626; text-decoration: line-through; }
+        .explanation { font-size: 1rem; color: #b91c1c; margin-top: 0.25rem; font-style: italic;}
+        .hidden { display: none; }
+        .dotted-input {
+            border: none;
+            border-bottom: 2px dotted #000;
+            background: transparent;
+            outline: none;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 1.1rem;
+        }
+        .dotted-input:disabled {
+            color: #1d4ed8;
+            font-weight: bold;
+            border-bottom-style: solid;
+        }
+    </style>
+</head>
+<body class="text-black pb-28">
+
+    <div class="w-full max-w-[1600px] mx-auto px-4 py-6 md:px-12 md:py-10 lg:px-24" style="min-height: 100vh;">
+        <!-- Header -->
+        <div class="mb-6 text-base md:text-lg font-bold text-blue-900">
+            TRƯỜNG THCS MỸ HÒA
+        </div>
+
+        <!-- Info & Score Box -->
+        <div class="border-2 border-blue-900 text-blue-900 flex flex-col md:flex-row mb-8">
+            <div class="p-4 border-b-2 md:border-b-0 md:border-r-2 border-blue-900 flex-1">
+                <h1 class="text-2xl font-bold text-center mb-4">ÔN TẬP HK2</h1>
+                <div class="space-y-3 text-lg">
+                    <p><strong>Họ và tên:</strong> ....................................................................</p>
+                    <p><strong>Lớp:</strong> 8..............................</p>
+                    <p><strong>Môn:</strong> Khoa học Tự nhiên</p>
+                </div>
+            </div>
+            <div class="p-4 flex gap-4 w-full md:w-5/12">
+                <div class="border border-blue-900 p-2 flex-1 flex flex-col text-center">
+                    <span class="font-bold border-b border-blue-900 pb-1 mb-2">Điểm</span>
+                    <span id="paper-score" class="text-4xl font-bold text-red-600 m-auto"></span>
+                </div>
+                <div class="border border-blue-900 p-2 flex-[2] flex flex-col text-center">
+                    <span class="font-bold border-b border-blue-900 pb-1 mb-2">Lời phê của giáo viên</span>
+                    <span id="paper-comment" class="text-lg text-blue-700 italic font-bold m-auto"></span>
+                </div>
+            </div>
+        </div>
+
+        <div id="quiz-container" class="text-lg">
+            <!-- Khu vực chứa câu hỏi sẽ được Javascript render -->
+        </div>
+
+    </div>
+
+    <!-- Nút điều khiển -->
+    <div class="fixed bottom-0 left-0 right-0 bg-gray-100 border-t border-gray-300 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex justify-center gap-6 z-50 flex-wrap">
+        <button onclick="generateQuiz()" class="px-8 py-3 bg-green-700 text-white font-bold rounded-xl border-b-[5px] border-green-900 hover:bg-green-600 active:border-b-0 active:translate-y-[5px] transition-all shadow-lg tracking-wide">
+            TẠO ĐỀ MỚI
+        </button>
+        <button id="submit-btn" onclick="checkAnswers()" class="px-8 py-3 bg-green-800 text-white font-bold rounded-xl border-b-[5px] border-green-900 hover:bg-green-700 active:border-b-0 active:translate-y-[5px] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:border-b-[5px] transition-all shadow-lg tracking-wide">
+            NỘP BÀI & CHẤM ĐIỂM
+        </button>
+    </div>
+
+    <script>
+        // --- KHO DỮ LIỆU CÂU HỎI ---
+
+        const mcBank = [
+            {
+                q: "Khi một vật được làm nóng, nội năng của vật sẽ:",
+                options: ["giảm xuống.", "không thay đổi.", "tăng lên.", "lúc tăng lúc giảm."],
+                ans: "tăng lên."
+            },
+            {
+                q: "Một học sinh quan sát thấy các sinh vật: cá chép, giun đất, xương rồng, vi khuẩn sống trong ruột người. Nhóm nào phân loại đúng môi trường sống?",
+                options: [
+                    "Cá chép – dưới nước; giun đất – trong đất; xương rồng – trên cạn; vi khuẩn – sinh vật.",
+                    "Cá chép – trên cạn; giun đất – trong đất; xương rồng – dưới nước; vi khuẩn – sinh vật.",
+                    "Cá chép – dưới nước; giun đất – trên cạn; xương rồng – trong đất; vi khuẩn – sinh vật.",
+                    "Cá chép – sinh vật; giun đất – trong đất; xương rồng – trên cạn; vi khuẩn – dưới nước."
+                ],
+                ans: "Cá chép – dưới nước; giun đất – trong đất; xương rồng – trên cạn; vi khuẩn – sinh vật."
+            },
+            {
+                q: "Biện pháp nào sau đây giúp bảo vệ quần thể sinh vật?",
+                options: [
+                    "Bảo vệ môi trường sống của sinh vật.",
+                    "Khai thác tối đa số lượng cá trong ao.",
+                    "Săn bắt động vật trong mùa sinh sản.",
+                    "Phá rừng để mở rộng đất canh tác."
+                ],
+                ans: "Bảo vệ môi trường sống của sinh vật."
+            },
+            {
+                q: "Đặc điểm nào sau đây đúng với quần xã sinh vật?",
+                options: [
+                    "Gồm nhiều loài sinh vật sống chung và có mối quan hệ với nhau.",
+                    "Chỉ gồm các cá thể cùng loài.",
+                    "Chỉ gồm các sinh vật sống trên cạn.",
+                    "Không có sự tương tác giữa các loài."
+                ],
+                ans: "Gồm nhiều loài sinh vật sống chung và có mối quan hệ với nhau."
+            },
+            {
+                q: "Trong buổi thực hành điều tra quần xã, nhóm cần thực hiện bước nào sau đây là phù hợp nhất?",
+                options: [
+                    "Liệt kê các loài sinh vật có mặt và phân loại theo nhóm (thực vật, động vật, vi sinh vật).",
+                    "Chỉ đếm số lượng cá thể của từng loài.",
+                    "Chỉ quan sát các loài dễ nhìn thấy.",
+                    "Chỉ ghi lại các loài động vật."
+                ],
+                ans: "Liệt kê các loài sinh vật có mặt và phân loại theo nhóm (thực vật, động vật, vi sinh vật)."
+            },
+            {
+                q: "Sinh quyển bao gồm những thành phần nào?",
+                options: [
+                    "Gồm môi trường đất, nước và không khí có sinh vật sống.",
+                    "Chỉ gồm môi trường đất.",
+                    "Chỉ gồm môi trường nước và không khí.",
+                    "Chỉ gồm môi trường trên cạn."
+                ],
+                ans: "Gồm môi trường đất, nước và không khí có sinh vật sống."
+            },
+            {
+                q: "Phát biểu nào sau đây đúng về sinh quyển?",
+                options: [
+                    "Sinh quyển là phần Trái Đất có sự sống, bao gồm nhiều môi trường khác nhau.",
+                    "Sinh quyển chỉ tồn tại trong môi trường nước.",
+                    "Sinh quyển là nơi không có sinh vật sinh sống.",
+                    "Sinh quyển chỉ bao gồm động vật và thực vật."
+                ],
+                ans: "Sinh quyển là phần Trái Đất có sự sống, bao gồm nhiều môi trường khác nhau."
+            },
+            {
+                q: "Thành phần chính của muối ăn sinh hoạt là hợp chất có công thức hóa học là NaCl. Tên gọi của hợp chất này là:",
+                options: ["sodium chloride.", "sodium clorua.", "sodium chlorate.", "natri chlorine."],
+                ans: "sodium chloride."
+            },
+            {
+                q: "Vai trò chủ yếu của phân bón đối với đất và cây trồng là gì?",
+                options: [
+                    "Bổ sung các nguyên tố dinh dưỡng thiết yếu (đa lượng, trung lượng, vi lượng).",
+                    "Tiêu diệt các loại sâu bệnh, nấm và vi khuẩn gây hại cho cây.",
+                    "Cung cấp toàn bộ lượng nước cần thiết để cây quang hợp mỗi ngày.",
+                    "Giúp rễ cây bám chặt vào đất để chống lại sự đổ ngã khi có gió bão."
+                ],
+                ans: "Bổ sung các nguyên tố dinh dưỡng thiết yếu (đa lượng, trung lượng, vi lượng)."
+            },
+            {
+                q: "Dựa vào bảng tính tan, nhóm hợp chất nào sau đây đều được phân loại là base không tan?",
+                options: ["Cu(OH)<sub>2</sub>, Fe(OH)<sub>3</sub>.", "NaOH, Cu(OH)<sub>2</sub>.", "KOH, Fe(OH)<sub>3</sub>.", "KOH, Ba(OH)<sub>2</sub>."],
+                ans: "Cu(OH)<sub>2</sub>, Fe(OH)<sub>3</sub>."
+            },
+            {
+                q: "Học sinh muốn pha dung dịch kiềm. Không thể sử dụng hợp chất nào sau đây để pha chế dung dịch kiềm?",
+                options: ["Magnesium hydroxide (Mg(OH)<sub>2</sub>).", "Potassium hydroxide (KOH).", "Barium hydroxide (Ba(OH)<sub>2</sub>).", "Sodium hydroxide (NaOH)."],
+                ans: "Magnesium hydroxide (Mg(OH)<sub>2</sub>)."
+            },
+            {
+                q: "Để chứng minh 'Oxide base tác dụng với acid tạo thành muối', phản ứng giữa cặp chất nào là minh họa phù hợp nhất?",
+                options: [
+                    "Copper(II) oxide (CuO) và hydrochloric acid (HCl).",
+                    "Calcium oxide (CaO) và carbon dioxide (CO<sub>2</sub>).",
+                    "Sodium hydroxide (NaOH) và sulfur dioxide (SO<sub>2</sub>).",
+                    "Sodium oxide (Na<sub>2</sub>O) và nước (H<sub>2</sub>O)."
+                ],
+                ans: "Copper(II) oxide (CuO) và hydrochloric acid (HCl)."
+            }
+        ];
+
+        const tfBank = [
+            { q: "Chỉ cần quan sát bằng mắt thường là đủ để đánh giá mức độ ô nhiễm môi trường.", ans: "S" },
+            { q: "Nên ghi chép lại các nguồn gây ô nhiễm như rác thải, nước thải, khói bụi trong điều tra ô nhiễm.", ans: "Đ" },
+            { q: "Việc phỏng vấn người dân giúp bổ sung thông tin về tình trạng ô nhiễm môi trường.", ans: "Đ" },
+            { q: "Chỉ cần điều tra một lần là có thể kết luận chính xác về hiện trạng ô nhiễm.", ans: "S" },
+            { q: "Dựa vào thành phần nguyên tố, SO<sub>2</sub> và CaO đều là các oxide.", ans: "Đ" },
+            { q: "Ca(OH)<sub>2</sub> cũng có chứa oxygen trong thành phần do đó nó được xếp vào loại hợp chất oxide.", ans: "S" },
+            { q: "Khí SO<sub>2</sub> được phân loại là oxide acid do có khả năng tác dụng với dung dịch kiềm.", ans: "Đ" },
+            { q: "Khí SO<sub>2</sub> được phân loại là oxide base do có khả năng tác dụng với dung dịch kiềm.", ans: "S" }
+        ];
+
+        const saBank = [
+            { q: "Một thanh kim loại dài 1 m khi được nung nóng thì dài thêm 2 mm. Nếu có 5 thanh như vậy đặt nối tiếp nhau, khi cùng được nung nóng thì tổng chiều dài tăng thêm bao nhiêu mm? (Chỉ điền số)", ans: "10" },
+            { q: "Da người cấu tạo gồm mấy lớp chính? (Chỉ điền số)", ans: "3" },
+            { q: "Da người có bao nhiêu chức năng chính? (Chỉ điền số)", ans: "4" },
+            { q: "Cho 5 mẫu dung dịch: (1) Nước mưa pH=4,5; (2) Máu pH=7,4; (3) Nước cất để hở pH=5,8; (4) Sữa bò pH=6,6; (5) Thuốc muối pH=8,2. Có bao nhiêu mẫu có môi trường acid? (Chỉ điền số)", ans: "3" },
+            { q: "Cho 5 mẫu dung dịch: (1) Nước chanh pH=2,4; (2) Giấm ăn pH=3,0; (3) Nước cất để hở pH=5,8; (4) Sữa bò pH=6,6; (5) Thuốc muối pH=8,2. Có bao nhiêu mẫu có môi trường acid? (Chỉ điền số)", ans: "4" }
+        ];
+
+        // --- HÀM HỖ TRỢ ---
+
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        let currentData = { mc: [], tf: [], sa: [] };
+        let isSubmitted = false;
+
+        // --- TẠO ĐỀ ---
+
+        function generateQuiz() {
+            isSubmitted = false;
+            document.getElementById('submit-btn').disabled = false;
+            document.getElementById('submit-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('paper-score').innerText = '';
+            document.getElementById('paper-comment').innerText = '';
+
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+
+            // Chọn ngẫu nhiên câu hỏi
+            currentData.mc = shuffle([...mcBank]).slice(0, 5);
+            currentData.tf = shuffle([...tfBank]).slice(0, 5);
+            currentData.sa = shuffle([...saBank]).slice(0, 3);
+
+            let html = '';
+
+            // Render Trắc nghiệm (5 câu)
+            html += `<h2 class="text-xl font-bold uppercase mb-4">PHẦN I. TRẮC NGHIỆM NHIỀU LỰA CHỌN (5,0 điểm)</h2>`;
+            currentData.mc.forEach((item, index) => {
+                let options = shuffle([...item.options]);
+                html += `
+                <div class="mb-4 question-block text-justify">
+                    <p class="font-bold mb-2">Câu ${index + 1} <span id="mark_mc_${index}" class="font-sans text-xl ml-1"></span>: <span class="font-normal">${item.q}</span></p>
+                    <div class="grid md:grid-cols-2 gap-y-2 pl-4">
+                        ${options.map((opt, oIdx) => `
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="radio" name="mc_${index}" value="${opt}" class="mt-1.5 w-4 h-4 accent-blue-600">
+                                <span><b>${String.fromCharCode(65 + oIdx)}.</b> ${opt}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                    <div id="exp_mc_${index}" class="explanation hidden">Đáp án đúng: ${item.ans}</div>
+                </div>`;
+            });
+
+            // Render Đúng/Sai (5 câu)
+            html += `<h2 class="text-xl font-bold uppercase mt-8 mb-4">PHẦN II. TRẮC NGHIỆM ĐÚNG / SAI (3,0 điểm)</h2>`;
+            html += `<table class="w-full text-left border-collapse border border-black mb-6">
+                    <thead>
+                        <tr class="border-b border-black text-center bg-gray-50">
+                            <th class="py-2 border-r border-black w-12">TT</th>
+                            <th class="py-2 border-r border-black">Phát biểu</th>
+                            <th class="py-2 border-r border-black w-16">Đúng</th>
+                            <th class="py-2 w-16">Sai</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            currentData.tf.forEach((item, index) => {
+                html += `
+                        <tr class="border-b border-black last:border-0 text-center hover:bg-gray-50">
+                            <td class="py-3 border-r border-black font-bold">${index + 1} <div id="mark_tf_${index}" class="font-sans text-xl"></div></td>
+                            <td class="py-3 border-r border-black text-left px-3 text-justify">
+                                ${item.q}
+                                <div id="exp_tf_${index}" class="explanation hidden">Đáp án đúng: ${item.ans === 'Đ' ? 'Đúng' : 'Sai'}</div>
+                            </td>
+                            <td class="py-3 border-r border-black"><input type="radio" name="tf_${index}" value="Đ" class="w-5 h-5 accent-blue-600"></td>
+                            <td class="py-3"><input type="radio" name="tf_${index}" value="S" class="w-5 h-5 accent-blue-600"></td>
+                        </tr>`;
+            });
+            html += `</tbody></table>`;
+
+            // Render Trả lời ngắn (3 câu)
+            html += `<h2 class="text-xl font-bold uppercase mt-8 mb-4">PHẦN III. TRẢ LỜI NGẮN (2,0 điểm)</h2>`;
+            currentData.sa.forEach((item, index) => {
+                html += `
+                <div class="mb-6 question-block">
+                    <p class="font-bold mb-2">Câu ${index + 1} <span id="mark_sa_${index}" class="font-sans text-xl ml-1"></span>: <span class="font-normal">${item.q}</span></p>
+                    <div class="pl-4 flex items-center gap-3 mt-3">
+                        <span class="font-bold mr-2 whitespace-nowrap">Trả lời:</span> 
+                        <div class="flex gap-2">
+                            <input type="text" maxlength="1" id="sa_${index}_0" oninput="moveToNext(this, 'sa_${index}_1')" class="w-10 h-12 text-center border-2 border-blue-900 text-xl font-bold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded bg-white shadow-inner uppercase">
+                            <input type="text" maxlength="1" id="sa_${index}_1" oninput="moveToNext(this, 'sa_${index}_2')" onkeydown="moveToPrev(event, this, 'sa_${index}_0')" class="w-10 h-12 text-center border-2 border-blue-900 text-xl font-bold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded bg-white shadow-inner uppercase">
+                            <input type="text" maxlength="1" id="sa_${index}_2" oninput="moveToNext(this, 'sa_${index}_3')" onkeydown="moveToPrev(event, this, 'sa_${index}_1')" class="w-10 h-12 text-center border-2 border-blue-900 text-xl font-bold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded bg-white shadow-inner uppercase">
+                            <input type="text" maxlength="1" id="sa_${index}_3" onkeydown="moveToPrev(event, this, 'sa_${index}_2')" class="w-10 h-12 text-center border-2 border-blue-900 text-xl font-bold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded bg-white shadow-inner uppercase">
+                        </div>
+                    </div>
+                    <div id="exp_sa_${index}" class="explanation hidden mt-2">Đáp án đúng: ${item.ans}</div>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // --- HỖ TRỢ NHẬP KÝ TỰ (TRẢ LỜI NGẮN) ---
+        function moveToNext(current, nextId) {
+            if (current.value.length === 1) {
+                document.getElementById(nextId)?.focus();
+            }
+        }
+
+        function moveToPrev(event, current, prevId) {
+            if (event.key === 'Backspace' && current.value === '') {
+                document.getElementById(prevId)?.focus();
+            }
+        }
+
+        // --- CHẤM ĐIỂM ---
+
+        function checkAnswers() {
+            if (isSubmitted) return;
+            let totalScore = 0;
+            const totalQuestions = 5 + 5 + 3; // 13 questions
+
+            // Check Trắc nghiệm
+            currentData.mc.forEach((item, index) => {
+                const selected = document.querySelector(`input[name="mc_${index}"]:checked`);
+                const expDiv = document.getElementById(`exp_mc_${index}`);
+                const markSpan = document.getElementById(`mark_mc_${index}`);
+                expDiv.classList.remove('hidden');
+
+                let isCorrect = false;
+                if (selected && selected.value === item.ans) {
+                    totalScore++;
+                    isCorrect = true;
+                }
+                
+                markSpan.innerHTML = isCorrect ? '✔' : '✘';
+                markSpan.className = isCorrect ? 'font-sans text-3xl font-bold text-green-700 ml-1' : 'font-sans text-3xl font-bold text-red-700 ml-1';
+                
+                // Highlight correct answer
+                document.querySelectorAll(`input[name="mc_${index}"]`).forEach(radio => {
+                    radio.disabled = true;
+                    if(radio.value === item.ans){
+                         radio.nextElementSibling.classList.add('text-green-700');
+                    } else if (radio.checked && radio.value !== item.ans) {
+                         radio.nextElementSibling.classList.add('text-red-600', 'line-through');
+                    }
+                });
+            });
+
+            // Check Đúng/Sai
+            currentData.tf.forEach((item, index) => {
+                const selected = document.querySelector(`input[name="tf_${index}"]:checked`);
+                const expDiv = document.getElementById(`exp_tf_${index}`);
+                const markSpan = document.getElementById(`mark_tf_${index}`);
+                expDiv.classList.remove('hidden');
+
+                let isCorrect = false;
+                if (selected && selected.value === item.ans) {
+                    totalScore++;
+                    isCorrect = true;
+                }
+                
+                markSpan.innerHTML = isCorrect ? '✔' : '✘';
+                markSpan.className = isCorrect ? 'font-sans text-3xl font-bold text-green-700 mt-1 block' : 'font-sans text-3xl font-bold text-red-700 mt-1 block';
+                
+                document.querySelectorAll(`input[name="tf_${index}"]`).forEach(radio => radio.disabled = true);
+            });
+
+            // Check Trả lời ngắn
+            currentData.sa.forEach((item, index) => {
+                let userAnswer = '';
+                const inputs = [];
+                for(let i = 0; i < 4; i++) {
+                    const input = document.getElementById(`sa_${index}_${i}`);
+                    inputs.push(input);
+                    userAnswer += input.value.trim().toLowerCase();
+                    input.disabled = true;
+                }
+                
+                const expDiv = document.getElementById(`exp_sa_${index}`);
+                const markSpan = document.getElementById(`mark_sa_${index}`);
+                expDiv.classList.remove('hidden');
+
+                const correctAnswer = item.ans.trim().toLowerCase();
+                let isCorrect = false;
+
+                if (userAnswer === correctAnswer) {
+                    inputs.forEach(input => {
+                        input.classList.remove('border-blue-900', 'text-blue-900', 'bg-white');
+                        input.classList.add('border-green-600', 'text-green-700', 'bg-green-50');
+                    });
+                    totalScore++;
+                    isCorrect = true;
+                } else {
+                    inputs.forEach(input => {
+                        input.classList.remove('border-blue-900', 'text-blue-900', 'bg-white');
+                        input.classList.add('border-red-600', 'text-red-700', 'bg-red-50');
+                    });
+                }
+                
+                markSpan.innerHTML = isCorrect ? '✔' : '✘';
+                markSpan.className = isCorrect ? 'font-sans text-3xl font-bold text-green-700 ml-1' : 'font-sans text-3xl font-bold text-red-700 ml-1';
+            });
+
+            // Hiển thị điểm trên khu vực Giấy thi
+            const scale10 = ((totalScore / totalQuestions) * 10).toFixed(1);
+            
+            document.getElementById('paper-score').innerText = scale10;
+            const commentBox = document.getElementById('paper-comment');
+            
+            commentBox.className = "text-lg italic font-bold m-auto ";
+            if (scale10 >= 9) {
+                commentBox.innerText = "Đạt yêu cầu! Làm bài rất tốt.";
+                commentBox.classList.add('text-green-700');
+            } else {
+                commentBox.innerText = "Chưa đạt. Cần ôn tập lại kiến thức.";
+                commentBox.classList.add('text-red-600');
+            }
+
+            isSubmitted = true;
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('submit-btn').classList.add('opacity-50', 'cursor-not-allowed');
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Khởi tạo lần đầu
+        window.onload = generateQuiz;
+
+    </script>
+</body>
+</html>
